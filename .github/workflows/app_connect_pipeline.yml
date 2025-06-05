@@ -34,7 +34,7 @@ jobs:
         git commit -m 'Add packaged BAR file to bars/ directory'
         git push origin main
       env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        GITHUB_TOKEN: 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
 
     # Optional: Upload as GitHub artifact
     - name: Upload BAR as Artifact
