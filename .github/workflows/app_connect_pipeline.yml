@@ -1,0 +1,66 @@
+
+name: ACE BAR Build and Deploy
+
+on:
+  push:
+    branches:
+      - main  # Or your working branch
+  workflow_dispatch:
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout Code
+      uses: actions/checkout@v3
+
+    - name: Pull IBM ACE 12 Image
+      run: |
+        docker pull icr.io/ibm-appconnect/appconnect-12:latest
+
+    - name: Build BAR inside Container
+      run: |
+        docker run --rm -v ${{ github.workspace }}:/app icr.io/ibm-appconnect/appconnect-12:latest \
+        bash -c "mqsicreatebar -data /app/workspace -b /app/output/app.bar -a YourAppName"
+
+    - name: Upload BAR as GitHub Artifact (Optional)
+      uses: actions/upload-artifact@v3
+      with:
+        name: app.bar
+        path: output/app.bar
+
+    - name: Commit BAR to GitHub (if needed)
+      run: |
+        git config --global user.name "github-actions"
+        git config --global user.email "github-actions@github.com"
+        cp output/app.bar ./
+        git add app.bar
+        git commit -m "Add BAR file"
+        git push origin main
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+    # OR push to Artifactory
+    # - name: Push BAR to Artifactory
+    #   run: |
+    #     curl -u "${{ secrets.ARTIFACTORY_USER }}:${{ secrets.ARTIFACTORY_PASSWORD }}" \
+    #     -T output/app.bar "https://your-artifactory-url/path/to/barfile"
+
+    - name: Setup SSH for Dev Server
+      run: |
+        mkdir -p ~/.ssh
+        echo "${{ secrets.SSH_PRIVATE_KEY }}" > ~/.ssh/id_rsa
+        chmod 600 ~/.ssh/id_rsa
+        ssh-keyscan -H ${{ secrets.DEV_SERVER }} >> ~/.ssh/known_hosts
+
+    - name: Copy BAR to Dev Server
+      run: |
+        scp output/app.bar ${{ secrets.DEV_USER }}@${{ secrets.DEV_SERVER }}:/tmp/
+
+    - name: Deploy BAR on Dev Server
+      run: |
+        ssh ${{ secrets.DEV_USER }}@${{ secrets.DEV_SERVER }} << EOF
+          source /opt/ibm/ace-12/server/bin/mqsiprofile
+          mqsibar -b /tmp -a app.bar -w /var/mqsi/components/DevIntegrationServer
+        EOF
