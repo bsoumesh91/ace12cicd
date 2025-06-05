@@ -13,7 +13,7 @@ jobs:
 
     steps:
     - name: Checkout Code
-      uses: actions/checkout@3.5.3
+      uses: actions/checkout@v4
 
     - name: Pull IBM ACE 12 Image
       run: |
