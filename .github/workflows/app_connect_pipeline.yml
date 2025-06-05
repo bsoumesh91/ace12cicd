@@ -36,13 +36,6 @@ jobs:
       env:
         GITHUB_TOKEN: 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
 
-    # Optional: Upload as GitHub artifact
-    - name: Upload BAR as Artifact
-      uses: actions/upload-artifact@v3
-      with:
-        name: app.bar
-        path: bars/app.bar
-
     - name: Setup SSH for Dev Server
       run: |
         mkdir -p ~/.ssh
